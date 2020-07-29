@@ -1,20 +1,27 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import {postRoute as registerUser, getRoute as authUser} from "./routes/auth";
+
+
+const mongooseOptions = {
+    useUnifiedTopology: true,
+    useNewUrlParser: true
+}
 
 const app = express();
 dotenv.config();
 
-const mongooseOptions = {
-    useNewUrlParser: true
-}
-
+//connect to mongoDB
 mongoose.connect(
-    String(process.env.STRCONN), mongooseOptions, () => console.log("Connect to DB")
+    String(process.env.STRCONN), mongooseOptions,() => console.log("Connect to DB")
 );
 
-app.get("/", (req,res) => {
-    return res.json({ message: "Hello world" });
-});
+//Middlewares
+app.use(express.json());
+
+//Route Middlewares 
+app.use("/api/user", registerUser);
+app.use("/api/user",authUser);
 
 app.listen(3000); 
