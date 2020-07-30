@@ -1,11 +1,13 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import {postRoute as registerUser, getRoute as authUser} from "./routes/auth";
+import {registerUser, loginUser} from "./routes/auth";
 
 
 const mongooseOptions = {
     useUnifiedTopology: true,
+    useCreateIndex: true,
+    useFindAndModify: false,
     useNewUrlParser: true
 }
 
@@ -22,6 +24,6 @@ app.use(express.json());
 
 //Route Middlewares 
 app.use("/api/user", registerUser);
-app.use("/api/user",authUser);
+app.use("/api/user", loginUser);
 
 app.listen(3000); 
