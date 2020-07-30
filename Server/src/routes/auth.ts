@@ -1,6 +1,7 @@
-import express, { Request } from "express";
-import User, { IUser } from "../model/User";
+import express from "express";
+import User from "../model/User";
 import bcrypt from "bcrypt";
+import {createAccessToken,createRefreshToken} from "../token/authTokens";
 
 const route = express.Router();
 
@@ -10,7 +11,7 @@ export const registerUser = route.post("/register", async (req,res) => {
     const regexPw = new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/);
 
     if(!regexEmail.test(req.body.email) || !regexPw.test(req.body.password)) 
-        return res.status(400).send({message: "Incorrect Email or Password"});
+        return res.status(400).send({message: "Invalid Email or Password"});
 
     const pwHash = await bcrypt.hash(req.body.password, await bcrypt.genSalt(10));
 
@@ -25,7 +26,7 @@ export const registerUser = route.post("/register", async (req,res) => {
     try
     {
         const savedUser = await user.save();
-        res.send(savedUser);
+        res.send("User register");
     }
     catch(err)
     {
@@ -35,17 +36,20 @@ export const registerUser = route.post("/register", async (req,res) => {
 
 
 export const loginUser = route.post("/login", async (req,res) => {
-    
-    const userExist = await User.findOne({email: req.body.email});
+    const user = new User({
+        email: req.body.email
+    });
 
-    if(!userExist) 
-        return  res.status(404).send("Not found user");
+    await User.findOne({email: req.body.email}, async (_err,response) => {
+        if(!response) return  res.status(404).send("Not found user");
 
-    //Vulnerable time attacks
-    const pwMatch = await bcrypt.compare(req.body.password, userExist.password);
-
-    if(pwMatch) 
-        console.log("login");
+        await bcrypt.compare(req.body.password, response.password, (_err,match) => {
+            if(!match) return res.status(400).send({message: "Invalid Email or Password"});
+            res.cookie("seasonId", createRefreshToken(user), {httpOnly: true});
+            const token = createAccessToken(user)
+            res.header("authorization", token).send(token);
+        });
+    });
 });
 
 export * from "./auth";
