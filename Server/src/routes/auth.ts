@@ -2,6 +2,7 @@ import express from "express";
 import User from "../model/User";
 import bcrypt from "bcrypt";
 import {createAccessToken,createRefreshToken} from "../token/authTokens";
+import mongoose from "mongoose";
 
 const route = express.Router();
 
@@ -14,7 +15,7 @@ export const registerUser = route.post("/register", async (req,res) => {
         return res.status(400).send({message: "Invalid Email or Password"});
 
     const pwHash = await bcrypt.hash(req.body.password, await bcrypt.genSalt(10));
-
+    
     const user = new User({
         firstname: req.body.firstname,
         lastname: req.body.lastname,
@@ -25,7 +26,7 @@ export const registerUser = route.post("/register", async (req,res) => {
     
     try
     {
-        const savedUser = await user.save();
+        const a = await user.save();
         res.send("User register");
     }
     catch(err)
@@ -36,17 +37,17 @@ export const registerUser = route.post("/register", async (req,res) => {
 
 
 export const loginUser = route.post("/login", async (req,res) => {
-    const user = new User({
-        email: req.body.email
-    });
 
+    
     await User.findOne({email: req.body.email}, async (_err,response) => {
         if(!response) return  res.status(404).send("Not found user");
 
+        const userObj = {id: response._id, email: response.email};
+       
         await bcrypt.compare(req.body.password, response.password, (_err,match) => {
             if(!match) return res.status(400).send({message: "Invalid Email or Password"});
-            res.cookie("seasonId", createRefreshToken(user), {httpOnly: true});
-            const token = createAccessToken(user)
+            res.cookie("seasonId", createRefreshToken(userObj), {httpOnly: true});
+            const token = createAccessToken(userObj)
             res.header("authorization", token).send(token);
         });
     });
