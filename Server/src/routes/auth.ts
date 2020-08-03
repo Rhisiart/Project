@@ -1,8 +1,8 @@
 import express from "express";
 import User from "../model/User";
 import bcrypt from "bcrypt";
-import {createAccessToken,createRefreshToken} from "../token/authTokens";
-import mongoose from "mongoose";
+import {createAccessToken,createRefreshToken,UserToken} from "../token/authTokens";
+import { verify } from "jsonwebtoken";
 
 const route = express.Router();
 
@@ -40,17 +40,37 @@ export const loginUser = route.post("/login", async (req,res) => {
 
     
     await User.findOne({email: req.body.email}, async (_err,response) => {
-        if(!response) return  res.status(404).send("Not found user");
+        if(!response) return res.status(404).send("Not found user");
 
-        const userObj = {id: response._id, email: response.email};
+        const userObj : UserToken = {id: response._id, email: response.email};
        
         await bcrypt.compare(req.body.password, response.password, (_err,match) => {
             if(!match) return res.status(400).send({message: "Invalid Email or Password"});
+
             res.cookie("seasonId", createRefreshToken(userObj), {httpOnly: true});
             const token = createAccessToken(userObj)
             res.header("authorization", token).send(token);
         });
     });
+});
+
+export const refreshToken = route.post("/refresh", async (req,res) => {
+    const cookieToken = req.cookies.seasonId;
+    if(!cookieToken) return res.send("Incorrect token");
+
+    let payload : UserToken;
+    try
+    {
+        payload = verify(cookieToken,process.env.REFRESH_TOKEN_SECRET!) as UserToken;
+    }catch(err)
+    {
+        return res.send("Incorrect token");
+    }
+
+    const user = await User.findById(payload.id);
+    if(!user) return res.send("Invalid user");
+
+    return res.send({message : "access token refreshed", access_token : createAccessToken({id: user._id, email: user.email})});
 });
 
 export * from "./auth";

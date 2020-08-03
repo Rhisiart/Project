@@ -1,17 +1,21 @@
 import jwt from "jsonwebtoken";
 import express from "express";
-import {IUser} from "../model/User"
 
-export const createAccessToken = (user: {id: any, email : String }) => 
+export interface UserToken {
+    id: any, 
+    email : String 
+}
+
+export const createAccessToken = (user: UserToken) => 
 {
-    return jwt.sign({userId: user.id, userEmail: user.email}, process.env.AUTH_TOKEN_SECRET!,{
+    return jwt.sign(user, process.env.AUTH_TOKEN_SECRET!,{
         expiresIn: "15min"
     });
 };
 
-export const createRefreshToken = (user: {id: any, email : String }) => 
+export const createRefreshToken = (user: UserToken) => 
 {
-    return jwt.sign({userId: user.id, userEmail: user.email}, process.env.REFRESH_TOKEN_SECRET!,{
+    return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET!,{
         expiresIn: "7d"
     });
 };
