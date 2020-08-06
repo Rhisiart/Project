@@ -1,7 +1,7 @@
 import express from "express";
 import User from "../model/User";
 import bcrypt from "bcrypt";
-import {createAccessToken,createRefreshToken,UserToken} from "../token/authTokens";
+import {createAccessToken,createRefreshToken,UserToken,sendNewRefreshToken} from "../token/authTokens";
 import { verify } from "jsonwebtoken";
 
 const route = express.Router();
@@ -38,7 +38,6 @@ export const registerUser = route.post("/register", async (req,res) => {
 
 export const loginUser = route.post("/login", async (req,res) => {
 
-    
     await User.findOne({email: req.body.email}, async (_err,response) => {
         if(!response) return res.status(404).send("Not found user");
 
@@ -47,9 +46,9 @@ export const loginUser = route.post("/login", async (req,res) => {
         await bcrypt.compare(req.body.password, response.password, (_err,match) => {
             if(!match) return res.status(400).send({message: "Invalid Email or Password"});
 
-            res.cookie("seasonId", createRefreshToken(userObj), {httpOnly: true});
+            sendNewRefreshToken(res,createRefreshToken(userObj));
             const token = createAccessToken(userObj)
-            res.header("authorization", token).send(token);
+            res.header("Authorization", token).send({token: token});
         });
     });
 });
@@ -70,6 +69,7 @@ export const refreshToken = route.post("/refresh", async (req,res) => {
     const user = await User.findById(payload.id);
     if(!user) return res.send("Invalid user");
 
+    sendNewRefreshToken(res,createRefreshToken(payload));
     return res.send({message : "access token refreshed", access_token : createAccessToken({id: user._id, email: user.email})});
 });
 

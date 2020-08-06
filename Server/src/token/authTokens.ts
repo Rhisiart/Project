@@ -20,6 +20,11 @@ export const createRefreshToken = (user: UserToken) =>
     });
 };
 
+export const sendNewRefreshToken = (res : express.Response, token: String) =>
+{
+    res.cookie("seasonId", token, {httpOnly: true});
+};
+
 export const middlewareVerifyToken : express.RequestHandler  = (req,res,next) => {
     const authorization = req.headers["authorization"];
      
