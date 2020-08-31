@@ -1,6 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
-import {registerUser, loginUser,refreshToken} from "./routes/auth";
+import {registerUser, loginUser,revokeToken, LogOut} from "./routes/auth";
 import dotenv from "dotenv";
 import {test} from "./routes/Test";
 import cookie from "cookie-parser";
@@ -36,7 +36,8 @@ app.use(cookie());
 //Route Middlewares 
 app.use("/api/user", registerUser);
 app.use("/api/user", loginUser);
-app.use("/api/user", refreshToken);
+app.use("/api/user", revokeToken);
+app.use("/api/user", LogOut);
 app.use("/api",test);
 
 app.listen(2000); 

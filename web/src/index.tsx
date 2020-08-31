@@ -1,10 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import Routes from './Routes';
+import Routes from './routes/Routes';
+import { AuthProvider } from './Context/AuthContext';
 
 
 ReactDOM.render(
-    <Routes />,
+  <AuthProvider>
+    <Routes />
+  </AuthProvider>,
   document.getElementById('root')
 );

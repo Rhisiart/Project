@@ -1,28 +1,31 @@
 import jwt from "jsonwebtoken";
 import express from "express";
 
-export interface UserToken {
-    id: any, 
+export interface IUserToken {
+    id: string, 
     email : String 
 }
 
-export const createAccessToken = (user: UserToken) => 
+export const createAccessToken = (user: IUserToken) => 
 {
     return jwt.sign(user, process.env.AUTH_TOKEN_SECRET!,{
-        expiresIn: "15min"
+        expiresIn: "30s"
     });
 };
 
-export const createRefreshToken = (user: UserToken) => 
+export const createRefreshToken = (user: IUserToken) => 
 {
     return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET!,{
         expiresIn: "7d"
     });
 };
 
-export const sendNewRefreshToken = (res : express.Response, token: String) =>
+export const sendRefreshToken = (res : express.Response, token: String) =>
 {
-    res.cookie("seasonId", token, {httpOnly: true});
+    res.cookie("seasonId", token, {
+        httpOnly: true, 
+        //path: "/user/revoke"
+    });
 };
 
 export const middlewareVerifyToken : express.RequestHandler  = (req,res,next) => {

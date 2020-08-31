@@ -1,46 +1,38 @@
-import React from 'react';
-import {loginQuery} from "../../Api/Queries"
+import React, { useState } from 'react';
+import { useAuth } from '../../Context/AuthContext';
+import { IUser } from '../../Models/user';
 
-export interface Props
+export const Login : React.FC = () =>
 {
-  email: String;
-  password: String;
-}
+  const [email,setEmail] = useState<any>();
+  const [password,setPassword] = useState<any>();
+  const {LogIn} = useAuth();
 
-export class Login extends React.Component<Props,Props>
-{
-  constructor(props:Props){
-    super(props)
-    this.state = props;
+  async function handleLogin(e : React.FormEvent<HTMLFormElement>) {
+      e.preventDefault(); //dont refresh page
+      
+      const user : IUser = {
+        email:email,
+        password:password
+      }
+
+      await LogIn(user);
   }
 
-  handleChangeEmail = (event : React.ChangeEvent<HTMLInputElement>) =>{
-     this.setState({email: event.target.value});
-  }
-
-  handleChangePassword = (event : React.ChangeEvent<HTMLInputElement>) =>{
-    this.setState({password: event.target.value});
- }
-
-  render(){
-    return (
-      <form onSubmit={ async event => {
-        event.preventDefault(); //dont refresh page
-        console.log("form submit");
-        const response = await loginQuery(this.state);
-        console.log(response?.data);
-      }}>
+  return (
+    <form onSubmit={handleLogin}>
+      <div>
+        <h2>Login</h2>
         <div>
-          <h2>Login</h2>
-          <div>
-            <label>Email:</label>
-            <input type="email" placeholder="exemple@email.com" onChange={this.handleChangeEmail}/>
-            <label>Password:</label>
-            <input type="password" placeholder="password" onChange={this.handleChangePassword}/>
-            <button type="submit">Login</button>
-          </div>
+          <label>Email:</label>
+          <input type="email" value={email} placeholder="exemple@email.com" onChange={(e)=> setEmail(e.target.value)}/>
         </div>
-      </form>
-    );
-  }
+        <div>
+          <label>Password:</label>
+          <input type="password" value={password} placeholder="password" onChange={(e) => { setPassword(e.target.value)}}/>
+        </div>
+          <button type="submit">Login</button>
+        </div>
+    </form>
+  );
 }

@@ -1,7 +1,7 @@
 import express from "express";
 import User from "../model/User";
 import bcrypt from "bcrypt";
-import {createAccessToken,createRefreshToken,UserToken,sendNewRefreshToken} from "../token/authTokens";
+import {createAccessToken,createRefreshToken,IUserToken,sendRefreshToken, middlewareVerifyToken} from "../token/authTokens";
 import { verify } from "jsonwebtoken";
 
 const route = express.Router();
@@ -41,26 +41,26 @@ export const loginUser = route.post("/login", async (req,res) => {
     await User.findOne({email: req.body.email}, async (_err,response) => {
         if(!response) return res.status(404).send("Not found user");
 
-        const userObj : UserToken = {id: response._id, email: response.email};
+        const user : IUserToken = {id: response._id, email: response.email};
        
         await bcrypt.compare(req.body.password, response.password, (_err,match) => {
             if(!match) return res.status(400).send({message: "Invalid Email or Password"});
 
-            sendNewRefreshToken(res,createRefreshToken(userObj));
-            const token = createAccessToken(userObj)
-            res.header("Authorization", token).send({token: token});
+            sendRefreshToken(res,createRefreshToken(user));
+            const token = createAccessToken(user)
+            res.header("Authorization", token).send({token: token, user});
         });
     });
 });
 
-export const refreshToken = route.post("/refresh", async (req,res) => {
+export const revokeToken = route.post("/revoke", async (req,res) => {
     const cookieToken = req.cookies.seasonId;
-    if(!cookieToken) return res.send("Incorrect token");
+    if(!cookieToken) return res.status(400).send({message : "Incorrect token"});
 
-    let payload : UserToken;
+    let payload : IUserToken;
     try
     {
-        payload = verify(cookieToken,process.env.REFRESH_TOKEN_SECRET!) as UserToken;
+        payload = verify(cookieToken,process.env.REFRESH_TOKEN_SECRET!) as IUserToken;
     }catch(err)
     {
         return res.send("Incorrect token");
@@ -69,8 +69,17 @@ export const refreshToken = route.post("/refresh", async (req,res) => {
     const user = await User.findById(payload.id);
     if(!user) return res.send("Invalid user");
 
-    sendNewRefreshToken(res,createRefreshToken(payload));
-    return res.send({message : "access token refreshed", access_token : createAccessToken({id: user._id, email: user.email})});
+
+    const userInfo : IUserToken = {
+        id: user._id,
+        email: user.email
+    }
+    const newAccessToken = createRefreshToken(userInfo);
+    sendRefreshToken(res,newAccessToken);
+    return res.send({message : "access token refreshed", access_token : newAccessToken, user: userInfo});
 });
 
-export * from "./auth";
+export const LogOut = route.post("/logout",middlewareVerifyToken, (req,res) => {
+    sendRefreshToken(res,"");
+    return res.send({message: "logout"});
+})
